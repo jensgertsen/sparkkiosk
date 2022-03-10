@@ -10,7 +10,7 @@ import mailersend from './mailersend.js';
 import * as EmailValidator from 'email-validator';
 
 
-const appDb = new Database(config.get("datapath")+"/sparkkiosk.db");
+const appDb = new Database(config.get("applicationDatabase"));
 //async 
 function lnsubscribe(lndCredentials){
 	const settingsDefault = appDb.prepare("SELECT * FROM settings WHERE id='default';").get();
