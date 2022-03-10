@@ -1,0 +1,507 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>sparkkiosk dashboard</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/json2csv@4.2.1"></script>
+	<script src="/js/qrcode.min.js"></script>
+	<script>
+		var currencies = ["AED","ARS","AUD","BDT","BHD","BMD","BRL","CAD","CHF","CLP","CNY","CZK","DKK","EUR","GBP","HKD","HUF","IDR","ILS","INR","JPY","KRW","KWD","LKR","MMK","MXN","MYR","NOK","NZD","PHP","PKR","PLN","RUB","SAR","SEK","SGD","THB","TRY","TWD","UAH","USD","VEF","VND","XAG","XAU","XDR","ZAR"];
+		var defaultCurrency = "DKK";
+	</script>
+	
+	<style>
+		#contentcontainer{
+			width:60%;
+			margin:auto;
+			text-align:center;
+			
+		}
+		#contentheader{
+			background-color:darkorchid;
+			color:white;
+			margin:30px;
+			padding:30px;
+			text-align:center;
+		}
+		
+		#settingscontainer{
+			display:none;
+			margin-bottom:40px;
+		}
+		#createcontainer{
+			background-color:tomato;
+			margin:30px;
+			padding:30px;
+			text-align:center;
+			display:none;
+		}
+		
+		.lnurlitem{
+			background-color:turquoise;
+			margin:30px;
+			padding:30px;
+			display:flex;
+			justify-content: space-between;
+			gap: 20px;
+		}
+		.itemdetails{
+			flex-basis:60%;
+			text-align:left;
+		}
+		.itemqr{
+			flex-basis:40%;
+			text-align: left;
+		}
+		
+		
+		
+		
+		
+		.btn{
+			margin:auto;
+			color:white;
+			background-color:chartreuse;
+			cursor:pointer;
+			border: 2px white solid;
+			border-radius:5px;
+			width:256px;
+			padding:5px;
+			text-align:center;
+			margin-bottom:20px;
+		}
+		.btn:hover{
+			background-color:forestgreen;
+			
+		}
+		#topcontentcontainer{
+			display:flex;
+			align-items: center;
+		    justify-content: center;
+			margin-bottom: 20px;
+			font-size: 0.8em;
+			
+		}
+		.archivelink{
+			cursor:pointer;
+			color:tomato;
+		}
+		.settingslink{
+			cursor:pointer;
+			flex-basis:50%;
+			text-align:left;
+		}
+		.logoutlink{
+			text-align:right;
+			cursor:pointer;
+			flex-basis:50%;
+		}
+		.logoutlink:hover, .archivelink:hover, .settingslink:hover{
+			color:deeppink;
+		}
+		
+
+		#createcontainer{
+			display:none;
+		}
+		#mailsettings{
+			display:none;
+		}
+		.inp{
+			border: none;
+			border-radius:5px;
+			width:256px;
+			padding:5px;
+			margin-bottom:20px;
+		}
+		.narrowinline{
+			width:128px;
+			display:inline-block;
+			margin:0px 10px 20px 10px;
+		}
+		.itemqr img{
+			max-width:256px;
+			max-height:256px;
+		}
+		
+		@media only screen and (max-width: 960px) {
+			#contentcontainer{
+				width:90%;
+			}
+		}
+		
+		
+	</style>
+
+</head>
+
+<body>
+<div id="contentcontainer">
+	<h1>sparkkiosk dashboard</h1>
+	<div id="contentheader">
+		
+		<div id="topcontentcontainer">
+			<div class="settingslink" id="settingslink" onclick="showSettings();">settings</div>
+			<div class="logoutlink" onclick="doLogout();">logout</div>
+		</div>
+		<div id="settingscontainer">
+			Default currency: <select id="settingscurrency" class=""> 
+				<script>
+					for(var i=0;i<currencies.length;i++){
+						if(defaultCurrency.toLowerCase()==currencies[i].toLowerCase()){
+							$("#settingscurrency").append("<option value=\""+ currencies[i] +"\" selected>"+currencies[i]+"</option>");
+						}
+						else{
+							$("#settingscurrency").append("<option value=\""+ currencies[i] +"\">"+currencies[i]+"</option>");
+						}
+				
+					}
+				</script>
+				</select><br/>
+			<hr/>
+			<br/>
+			Send email invoices:  <input type="checkbox" id="settingssendmail" onchange="showMailSettings();"/>
+			<br/>
+			<br/>
+			
+			<div id="mailsettings">
+				Mails are sent to admin email and the costumer if the comments field from the wallet contains avalid email.<br/>
+				To send email invoices via mailsender, create an account at mailersend.com and create a new template containing these variables: 
+				<br/>
+				<code>
+				{$mailtext}, {$datetime}, {$invoiceid},{$itemtext}, {$itemprice}, {$itemcurrency}
+				</code><br/>
+				<br/>
+				Generate an API key, and paste here:<br/><br/>
+				<input type="text" placeholder="Mailersend API KEY" id="settingsmailersend_apikey" class="inp"><br/>
+				<input type="text" placeholder="Mailersend template ID" id="settingsmailersend_template" class="inp"><br/>
+				<input type="email" placeholder="Admin email" id="settingsadminemail" class="inp"><br/>
+				
+				
+				<input type="text" placeholder="Mail subject..." id="settingsmailsubject" class="inp"><br/>
+				Mail text<br/>
+				<textarea id="settingsmailtext"></textarea>
+				<br/><br/>
+			</div>
+			<div onclick="setSettings();" class="btn">SAVE SETTINGS</div>
+			
+		</div>
+		<div onclick="exportCSV();" class="btn">EXPORT _ALL_ INVOICES CSV</div>
+		<div onclick="getLNURLs();" class="btn">REFRESH LIST</div>
+		<div onclick="showCreate();" class="btn">NEW LNURL</div>
+	</div>
+	
+	
+	
+	<div id="createcontainer">
+		<input type="text" placeholder="Description..." id="frmdescription" class="inp"><br/>
+		<input type="text" placeholder="Price" id="frmamount" class="inp narrowinline">
+		
+		
+		<select id="frmcurrency" class=""> 
+		
+		<script>
+			for(var i=0;i<currencies.length;i++){
+				if(defaultCurrency.toLowerCase()==currencies[i].toLowerCase()){
+					$("#frmcurrency").append("<option value=\""+ currencies[i] +"\" selected>"+currencies[i]+"</option>");
+				}
+				else{
+					$("#frmcurrency").append("<option value=\""+ currencies[i] +"\">"+currencies[i]+"</option>");
+				}
+				
+			}
+		</script>
+		</select>
+		
+		
+		<div onclick="createLNURL();" class="btn">CREATE LNURL</div>
+	</div>
+	
+	<div id="lnurllist"></div>
+</div>
+
+<script>
+	$( document ).ready(function() {
+		getLNURLs();
+		getSettings();
+	});
+	
+	function showMailSettings(){
+		if($("#settingssendmail").is(":checked")) {
+			 $("#mailsettings").show();
+		}
+		else{
+			$("#mailsettings").hide();
+		}
+	}
+	function showSettings(){
+		$("#settingscontainer").toggle();
+		showMailSettings();
+		
+	}
+	
+	
+	function showCreate(){
+		$("#createcontainer").toggle();
+	}
+	
+	function setSettings(){
+		var strSendmail = "false";
+		if($("#settingssendmail").is(":checked")) {
+			strSendmail = "true";
+		}
+		let requestBody = { 
+		   	"sendmail":strSendmail,
+			"mailersend_apikey":$("#settingsmailersend_apikey").val(),
+			"mailersend_template":$("#settingsmailersend_template").val(),
+		    "currency": $("#settingscurrency").val(),
+		    "mailsubject": $("#settingsmailsubject").val(),
+			"mailtext": $("#settingsmailtext").val(),
+			"adminemail":$("#settingsadminemail").val()
+		}
+		console.log(JSON.stringify(requestBody));
+		jQuery.ajax({
+	        type: "POST",
+	        url: "/settings",
+	        data: JSON.stringify(requestBody),
+		    headers: {
+		              "Content-Type": "application/json"
+		          },
+	        contentType: "application/json"
+
+	    }).done(function(data){
+   			if(data.update){
+   				$("#settingslink").html("settings saved");
+				$("#settingscontainer").hide();
+   			}
+   	        else{
+   	             alert("ERROR not updated");
+   	        }
+   	    }).fail(function() {
+     			 alert("ERROR Fail");
+   	 	});
+		
+	}
+	
+	function getSettings(){
+		jQuery.ajax({
+	        type: "GET",
+	        url: "/settings",
+	        contentType: "application/json"
+
+	    }).done(function(data){
+			if(data){
+				console.log(JSON.stringify(data));
+				defaultCurrency = data.currency;
+				$("#settingscurrency").val(defaultCurrency).change();
+				$("#settingsmailsubject").val(data.mailsubject);
+				$("#settingsmailtext").val(data.mailtext);
+				$("#settingsmailersend_apikey").val(data.mailersend_apikey);
+				$("#settingsmailersend_template").val(data.mailersend_template);
+				$("#settingsadminemail").val(data.adminemail);
+				
+				
+				if(data.sendmails=="true"){
+					$("#settingssendmail").prop('checked', true);
+				}
+				else{
+					$("#settingssendmail").prop('checked', false);
+				}
+			}
+	    }).fail(function() {
+  			 alert("ERROR");
+	 	});
+		
+	}
+	
+	function getLNURLs(){
+		 $("#lnurllist").html("");
+		 jQuery.ajax({
+	        type: "GET",
+	        url: "/getlnurls",
+	        contentType: "application/json"
+
+	    }).done(function(data){
+			console.log(JSON.stringify(data));
+			$.each(data, function(key, value) {
+				var lnurlitem= "<div class=\"lnurlitem\">";
+				lnurlitem = lnurlitem + "<div class=\"itemdetails\">";
+				lnurlitem = lnurlitem + value.description + "<br/>";
+				lnurlitem = lnurlitem + value.amount +" "+ value.currency + "<br/>--";
+				lnurlitem = lnurlitem + "<div id=\"invoices"+ value.id +"\">";
+				if(value.invoices.length>0){
+					$.each(value.invoices, function(k, v) {
+						lnurlitem = lnurlitem + v.datecreated + ", " + v.status + "<br/>";
+					}); 
+				}
+				else{
+					lnurlitem = lnurlitem +"no invoices yet<br/>";
+				}
+				
+				
+				lnurlitem = lnurlitem + "</div>--";
+				lnurlitem = lnurlitem + "<div class=\"archivelink\" onclick=\"archiveLNURL('"+value.id +"')\">archive lnurl</a></div>";
+				lnurlitem = lnurlitem + "</div>";
+				lnurlitem = lnurlitem + "<div class=\"itemqr\" id=\"qrcode"+value.id+"\">wait...</div>";
+				lnurlitem = lnurlitem + "</div>";
+			
+				$("#lnurllist").append(lnurlitem);
+				$("#qrcode"+value.id).html("");
+				
+				
+				var qrcode = new QRCode(document.getElementById("qrcode"+value.id), {
+				        text: value.qrpayload,
+				        width: 512,
+				        height: 512,
+				        colorDark : "#000000",
+				        colorLight : "#ffffff",
+				        correctLevel : QRCode.CorrectLevel.H
+				    });
+					let download_link = document.createElement("a");
+					download_link.setAttribute("download", value.description.replaceAll(' ', '_')+".png");
+					download_link.setAttribute("class", "downloadlink");
+					download_link.innerText = "download";
+					$("#qrcode"+value.id).append(download_link);
+					
+					if(document.querySelector("#qrcode"+value.id+ " img").getAttribute("src") == null){
+				        setTimeout(() => {
+							var canvasData = document.querySelector("#qrcode"+value.id+ " canvas").toDataURL();
+							
+				            download_link.setAttribute("href", canvasData);
+				        }, 300);
+				    } 
+					else {
+				        setTimeout(() => {
+							var imgSrc = document.querySelector("#qrcode"+value.id+ " img").getAttribute("src");
+				            download_link.setAttribute("href", imgSrc);
+				        }, 300);
+				    }
+			}); 
+			
+	    }).fail(function() {
+  			 alert("ERROR");
+	 	});
+	}
+	function archiveLNURL(id){
+		if(confirm("Are you sure you wish to archive the LNURL?\nThis will disable the LNURL and cannot be undone")){
+   		 jQuery.ajax({
+   	        type: "PUT",
+   	        url: "/archive/"+id,
+   			headers: {"Content-Type": "application/json"},
+   	        contentType: "application/json"
+
+   	    }).done(function(data){
+   			if(data.update){
+   				getLNURLs();
+   			}
+   	        else{
+   	             alert("ERROR not updated");
+   	        }
+   	    }).fail(function() {
+     			 alert("ERROR Fail");
+   	 	});	
+		}
+	}
+	
+	function createLNURL(){
+		var description = $("#frmdescription").val();
+		var amount = ($("#frmamount").val()).replaceAll(",",".");
+		var currency = $("#frmcurrency").val();
+		
+		if (!$.isNumeric(amount) || description=="" || currency=="") {
+		    alert("Submit description, correct amount (float) and currency ");
+		}
+		else{
+			let requestBody = { 
+			    "description": description,
+				"amount":amount,
+				"currency":currency
+			}
+		
+			jQuery.ajax({
+		        type: "POST",
+		        url: "/createlnurl",
+		        data: JSON.stringify(requestBody),
+			    headers: {
+			              "Content-Type": "application/json"
+			          },
+		        contentType: "application/json"
+
+		    }).done(function(data){
+				if(data.update){
+					
+					$("#frmdescription").val("");
+					$("#frmamount").val("");
+					$("#frmcurrency").val("DKK");
+					
+					$("#createcontainer").hide();
+					
+					getLNURLs();
+		        }
+		        else{
+		            alert("ERROR NOT CREATED");
+		        }
+		    }).fail(function() {
+	  			 alert("ERROR");
+		 	});
+		}
+	}
+	
+	function doLogout(){
+		
+		 jQuery.ajax({
+	        type: "GET",
+	        url: "/dologout",
+			headers: {"Content-Type": "application/json"},
+	        contentType: "application/json"
+
+	    }).done(function(data){
+			if(data.auth==false){
+				location.href="/";
+			}
+	        else{
+	             alert("ERROR");
+	        }
+	    }).fail(function() {
+  			 alert("ERROR");
+	 	});
+		
+	}
+	
+	
+	function exportCSV() {
+	   	 jQuery.ajax({
+	        type: "GET",
+	        url: "/getinvoices",
+	        contentType: "application/json"
+
+	    }).done(function(data){
+			console.log("CSV RAW: " + JSON.stringify(data));
+			var csvString = "";
+			csvString = "date;status;text;satoshis;fiat;currency;LND hash;\r\n";
+			$.each(data, function(key, value) {
+				csvString += value.datecreated + ";" + value.status + ";" + value.memo + ";" + + value.value + ";" + ((value.amount)/1000)) + ";" + value.currency + ";" + value.r_hash + ";" + "\r\n";
+			});
+			var blob = new Blob([csvString], { type: "text/csv;charset=utf-8;"});
+	        var tmpLink = document.createElement("a");
+			var url = URL.createObjectURL(blob);
+	            tmpLink.setAttribute("href", url);
+	            tmpLink.setAttribute("download", "sparkkiosk_data_"+(new Date()).getTime()+".csv");
+	            tmpLink.style.visibility = 'hidden';
+	            document.body.appendChild(tmpLink);
+	            tmpLink.click();
+	            document.body.removeChild(tmpLink);
+		
+	    }).fail(function() {
+			 alert("ERROR");
+	 	});
+	}
+	
+	
+	
+</script>
+</body>
+
+</html>
