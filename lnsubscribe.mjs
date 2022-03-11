@@ -50,7 +50,7 @@ function lnsubscribe(lndCredentials){
 			const invoice = appDb.prepare("SELECT * FROM invoice WHERE r_hash=? AND status='OPEN';").get(hexHash);
 			
 			//console.log("SUBSCRIBE : "+ response.r_hash + " " + Buffer.from(response.r_hash, 'base64').toString('hex'));
-			if(!(if(typeof invoice === 'undefined')){
+			if(!(typeof invoice === 'undefined')){
 				console.log("SUBSCRIPTION: update: "+ hexHash + " / "+  response.state);
 				const dataUpdate = appDb.prepare("UPDATE invoice SET status=?, comment='', r_hash=?;").run(response.state,hexHash);
 			}
