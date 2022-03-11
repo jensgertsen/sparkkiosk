@@ -18,7 +18,7 @@ module.exports = function (recipient, id, subject,mailtext, itemtext, itemprice,
 		    substitutions: [
 		      {
 		        var: 'mailtext',
-				  value: mailtext
+				  value: mailtext+""
 		      },
 		      {
 		        var: 'datetime',
@@ -26,19 +26,19 @@ module.exports = function (recipient, id, subject,mailtext, itemtext, itemprice,
 		      },
 			  {
                   'var': 'invoiceid',
-                  'value': id
+                  'value': id+""
               },
 		      {
 		        var: 'itemtext',
-		        value: itemtext
+		        value: itemtext+""
 		      },
 		      {
 		        var: 'itemprice',
-		        value: itemprice
+		        value: itemprice+""
 		      },
 			  {
 		        var: 'itemcurrency',
-		        value: itemcurrency
+		        value: itemcurrency+""
 		      }
 		    ],
 		  }

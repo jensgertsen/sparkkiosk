@@ -482,7 +482,7 @@
 			var csvString = "";
 			csvString = "date;status;text;satoshis;fiat;currency;LND hash;\r\n";
 			$.each(data, function(key, value) {
-				csvString += value.datecreated + ";" + value.status + ";" + value.memo + ";" + + value.value + ";" + ((value.amount)/1000)) + ";" + value.currency + ";" + value.r_hash + ";" + "\r\n";
+				csvString += value.datecreated + ";" + value.status + ";" + value.memo + ";" + + ((value.value)/1000) + ";" + value.amount + ";" + value.currency + ";" + value.r_hash + ";" + "\r\n";
 			});
 			var blob = new Blob([csvString], { type: "text/csv;charset=utf-8;"});
 	        var tmpLink = document.createElement("a");

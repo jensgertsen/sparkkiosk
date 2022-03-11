@@ -2,9 +2,6 @@ import grpc from '@grpc/grpc-js';
 import protoLoader from '@grpc/proto-loader';
 import Database from 'better-sqlite3';
 import config from 'config';
-
-
-//import { mailersend } from './mailersend.js';
 import mailersend from './mailersend.js';
 
 import * as EmailValidator from 'email-validator';
@@ -44,12 +41,21 @@ function lnsubscribe(lndCredentials){
 	
 	let call = lightning.subscribeInvoices(request);
 	call.on('data', function(response) {
-		//console.log(response);
+		console.log("SUBSCRIPTION: NEW EVENT: "+ response.state);
 		if(response.state=="SETTLED" || response.state=="CANCELED"){
-			const invoice = appDb.prepare("SELECT * FROM invoice WHERE r_hash=?;").get(response.r_hash);
-			console.log("SUBSCRIBE : "+ response.r_hash + " " + Buffer.from(response.r_hash, 'base64').toString('hex'));
-			const dataUpdate = appDb.prepare("UPDATE invoice SET status=?, comment='', r_hash=?;").run(response.state,response.r_hash);
+			let hexHash = Buffer.from(response.r_hash, "base64").toString("hex");
 			
+			console.log("SUBSCRIPTION: hexHash: "+ hexHash);
+			
+			const invoice = appDb.prepare("SELECT * FROM invoice WHERE r_hash=? AND status='OPEN';").get(hexHash);
+			
+			//console.log("SUBSCRIBE : "+ response.r_hash + " " + Buffer.from(response.r_hash, 'base64').toString('hex'));
+			if(!(if(typeof invoice === 'undefined')){
+				console.log("SUBSCRIPTION: update: "+ hexHash + " / "+  response.state);
+				const dataUpdate = appDb.prepare("UPDATE invoice SET status=?, comment='', r_hash=?;").run(response.state,hexHash);
+			}
+			
+			/*
 			if(response.state="SETTLED" && settingsDefault.sendmails){
 				mailersend(
 					settingsDefault.adminemail,
@@ -76,6 +82,7 @@ function lnsubscribe(lndCredentials){
 					);
 				}
 			}
+			*/
 		}
 	});//on data end
 	call.on('end', function() {

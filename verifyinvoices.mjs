@@ -5,9 +5,7 @@ import config from 'config';
 
 
 //import { mailersend } from './mailersend.js';
-import pkg from './mailersend.js';
-const { mailersend } = pkg;
-
+import mailersend from './mailersend.js';
 
 import * as EmailValidator from 'email-validator';
 
@@ -50,7 +48,7 @@ function verifyinvoices(lndCredentials){
 			if(response.state=="SETTLED" || response.state=="CANCELED"){
 				console.log("FOUND UNNSYNCED: " + ci.r_hash);
 				const dataUpdate = appDb.prepare("UPDATE invoice SET status=?, comment='', r_hash=?;").run(response.state,response.r_hash);
-				if(data.state="SETTLED" && settingsDefault.sendmails){
+				if(ci.id != undefined && data.state=="SETTLED" && settingsDefault.sendmails){
 					mailersend(
 						settingsDefault.adminemail,
 						ci.id,

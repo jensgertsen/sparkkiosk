@@ -21,7 +21,7 @@ function lnurlstep2(id,comment,res,lndCredentials){
 		var memo = dataDb.memo;
 		var currency = dataDb.currency;
 		var bolt11 = "";
-		var r_hash = "";
+
 		
 		//create bolt11 from LND
 		
@@ -37,11 +37,8 @@ function lnurlstep2(id,comment,res,lndCredentials){
 	
 	
 		const macaroon = lndCredentials.macaroon;
-		console.log("MACAROON: " + macaroon);
-	
 		process.env.GRPC_SSL_CIPHER_SUITES = 'HIGH+ECDSA';
 		const lndCert = lndCredentials.cert;
-		console.log("CERT: " + lndCert);
 		const sslCreds = grpc.credentials.createSsl(lndCert);
 		const macaroonCreds = grpc.credentials.createFromMetadataGenerator(function(args, callback) {
 		  let metadata = new grpc.Metadata();
@@ -64,20 +61,25 @@ function lnurlstep2(id,comment,res,lndCredentials){
 		}; 
 		
 		lightning.addInvoice(request, function(err, response) {
-		  console.log(response);
+		  //console.log(response);
 		  
 			if(response != undefined && response.r_hash != undefined && response.payment_request != undefined ){
-				r_hash = Buffer.from(response.r_hash, 'base64').toString('hex');
+
 				bolt11 = response.payment_request;
+				let hexHash = Buffer.from(response.r_hash, "base64").toString("hex");
+				console.log("UPDATE INVOICE: "+ id +" hexHash: " + hexHash);
 				
-				
-				const dataUpdate = appDb.prepare("UPDATE invoice SET status='OPEN', dateissued=CURRENT_TIMESTAMP, r_hash=?, comment=? WHERE id=?;").run(r_hash,comment,id);
+				const dataUpdate = appDb.prepare("UPDATE invoice SET status='OPEN', dateissued=CURRENT_TIMESTAMP, r_hash=?, comment=? WHERE id=?;").run(response.r_hash,comment,id);
 				let lnurl = {
 				    pr: bolt11,
 				    routes: []
 				}
-				console.log("response TO WALLET: " + JSON.stringify(lnurl));
+				//console.log("response TO WALLET: " + JSON.stringify(lnurl));
+				
+				const sanity = appDb.prepare("SELECT * FROM invoice WHERE id=?;").get(id);
+				console.log("SANITY: " + JSON.stringify(sanity));
 			 	res.setHeader('Content-Type', 'application/json');
+				
 			  	res.send(lnurl);
 			
 			}
