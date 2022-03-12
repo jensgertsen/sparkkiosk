@@ -1,1 +1,0 @@
-docker buildx build --platform linux/arm64,linux/amd64 -t jensgertsen/sparktest:v0.0.2 --output "type=registry" .
