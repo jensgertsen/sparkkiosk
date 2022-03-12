@@ -3,7 +3,6 @@ import protoLoader from '@grpc/proto-loader';
 import Database from 'better-sqlite3';
 import config from 'config';
 import mailersend from './mailersend.js';
-
 import * as EmailValidator from 'email-validator';
 
 
@@ -24,11 +23,8 @@ function lnsubscribe(lndCredentials){
 	
 	
 	const macaroon = lndCredentials.macaroon
-	//console.log("MACAROON: " + macaroon);
-	
 	process.env.GRPC_SSL_CIPHER_SUITES = 'HIGH+ECDSA';
 	const lndCert = lndCredentials.cert;
-	//console.log("CERT: " + lndCert);
 	const sslCreds = grpc.credentials.createSsl(lndCert);
 	const macaroonCreds = grpc.credentials.createFromMetadataGenerator(function(args, callback) {
 	  let metadata = new grpc.Metadata();
@@ -36,7 +32,7 @@ function lnsubscribe(lndCredentials){
 	  callback(null, metadata);
 	});
 	let creds = grpc.credentials.combineChannelCredentials(sslCreds, macaroonCreds);
-	let lightning = new lnrpc.Lightning(process.env.LND_GRPC_ENDPOINT+":"+process.env.LND_GRPC_PORT, creds);
+	let lightning = new lnrpc.Lightning(lndCredentials.endPoint+":"+lndCredentials.lndPort, creds);
 	let request = {}; 
 	
 	let call = lightning.subscribeInvoices(request);
@@ -48,29 +44,11 @@ function lnsubscribe(lndCredentials){
 			console.log("SUBSCRIPTION: hexHash: "+ hexHash);
 			
 			const invoice = appDb.prepare("SELECT * FROM invoice WHERE r_hash=? AND status='OPEN';").get(hexHash);
-			
-			//console.log("SUBSCRIBE : "+ response.r_hash + " " + Buffer.from(response.r_hash, 'base64').toString('hex'));
 			if(!(typeof invoice === 'undefined')){
-				console.log("SUBSCRIPTION: update: "+ hexHash + " / "+  response.state);
 				const dataUpdate = appDb.prepare("UPDATE invoice SET status=?, comment='', r_hash=?;").run(response.state,hexHash);
-			}
-			
-			/*
-			if(response.state="SETTLED" && settingsDefault.sendmails){
-				mailersend(
-					settingsDefault.adminemail,
-					invoice.id,
-					settingsDefault.mailsubject,
-					settingsDefault.mailtext,
-					invoice.memo,
-					invoice.value,
-					invoice.currency,
-					settingsDefault.mailersend_apikey,
-					settingsDefault.mailersend_template
-				);
-				if(EmailValidator.validate(invoice.comment)){
+				if(response.state=="SETTLED" && settingsDefault.sendmails){
 					mailersend(
-						invoice.comment,
+						settingsDefault.adminemail,
 						invoice.id,
 						settingsDefault.mailsubject,
 						settingsDefault.mailtext,
@@ -80,9 +58,22 @@ function lnsubscribe(lndCredentials){
 						settingsDefault.mailersend_apikey,
 						settingsDefault.mailersend_template
 					);
+					if(EmailValidator.validate(invoice.comment)){
+						mailersend(
+							invoice.comment,
+							invoice.id,
+							settingsDefault.mailsubject,
+							settingsDefault.mailtext,
+							invoice.memo,
+							invoice.value,
+							invoice.currency,
+							settingsDefault.mailersend_apikey,
+							settingsDefault.mailersend_template
+						);
+					}
 				}
 			}
-			*/
+			
 		}
 	});//on data end
 	call.on('end', function() {

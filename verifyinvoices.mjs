@@ -2,14 +2,9 @@ import grpc from '@grpc/grpc-js';
 import protoLoader from '@grpc/proto-loader';
 import Database from 'better-sqlite3';
 import config from 'config';
-
-
-//import { mailersend } from './mailersend.js';
 import mailersend from './mailersend.js';
-
 import * as EmailValidator from 'email-validator';
 
-//console.log("DB: "+ config.get("datapath")+"sparkkiosk.db");
 const appDb = new Database(config.get("applicationDatabase"));
 
 function verifyinvoices(lndCredentials){
@@ -36,7 +31,7 @@ function verifyinvoices(lndCredentials){
 	  callback(null, metadata);
 	});
 	let creds = grpc.credentials.combineChannelCredentials(sslCreds, macaroonCreds);
-	let lightning = new lnrpc.Lightning(process.env.LND_GRPC_ENDPOINT+":"+process.env.LND_GRPC_PORT, creds);
+	let lightning = new lnrpc.Lightning(lndCredentials.endPoint+":"+lndCredentials.lndPort, creds);
 	
 	const invoices = appDb.prepare("SELECT * FROM invoice WHERE status='OPEN'").all();
 
@@ -45,10 +40,11 @@ function verifyinvoices(lndCredentials){
 		  r_hash: ci.r_hash, 
 		}; 
 		lightning.lookupInvoice(request, function(err, response) {
-			if(response.state=="SETTLED" || response.state=="CANCELED"){
-				console.log("FOUND UNNSYNCED: " + ci.r_hash);
-				const dataUpdate = appDb.prepare("UPDATE invoice SET status=?, comment='', r_hash=?;").run(response.state,response.r_hash);
-				if(ci.id != undefined && data.state=="SETTLED" && settingsDefault.sendmails){
+			if(!(typeof ci === 'undefined') && response.state=="SETTLED" || response.state=="CANCELED"){
+				
+				let hexHash = Buffer.from(response.r_hash, "base64").toString("hex");
+				const dataUpdate = appDb.prepare("UPDATE invoice SET status=?, comment='', r_hash=?;").run(response.state,hexHash);
+				if(ci.id != undefined && response.state=="SETTLED" && settingsDefault.sendmails){
 					mailersend(
 						settingsDefault.adminemail,
 						ci.id,

@@ -1,5 +1,3 @@
-import fs from 'fs';
-
 import Database from 'better-sqlite3';
 import crypto from "crypto";
 import grpc from '@grpc/grpc-js';
@@ -9,22 +7,16 @@ import config from 'config';
 const appDb = new Database(config.get("applicationDatabase"));
 const serviceUrl = config.get("serviceUrl");
 
-
-//async 
 function lnurlstep2(id,comment,res,lndCredentials){
 	
-	console.log("GET INOVICE: " + id);
 	const dataDb = appDb.prepare("SELECT * FROM invoice WHERE id=?;").get(id);
 	if(dataDb!=undefined){
 		var amount = dataDb.value;
 		var expiry = dataDb.expiry;
 		var memo = dataDb.memo;
 		var currency = dataDb.currency;
-		var bolt11 = "";
+		
 
-		
-		//create bolt11 from LND
-		
 		const loaderOptions = {
 		  keepCase: true,
 		  longs: String,
@@ -47,7 +39,7 @@ function lnurlstep2(id,comment,res,lndCredentials){
 		});
 		let creds = grpc.credentials.combineChannelCredentials(sslCreds, macaroonCreds);
 		
-		let lightning = new lnrpc.Lightning(process.env.LND_GRPC_ENDPOINT+":"+process.env.LND_GRPC_PORT, creds);
+		let lightning = new lnrpc.Lightning(lndCredentials.endPoint+":"+lndCredentials.lndPort, creds);
 		
 		var completeUrl = serviceUrl+ "/v1/invoices";
 		var metadatastring = '[["text/plain", "'+memo+'"]]';
@@ -61,27 +53,16 @@ function lnurlstep2(id,comment,res,lndCredentials){
 		}; 
 		
 		lightning.addInvoice(request, function(err, response) {
-		  //console.log(response);
-		  
-			if(response != undefined && response.r_hash != undefined && response.payment_request != undefined ){
-
-				bolt11 = response.payment_request;
+		  if(response != undefined && response.r_hash != undefined && response.payment_request != undefined ){
+				var bolt11 = response.payment_request;
 				let hexHash = Buffer.from(response.r_hash, "base64").toString("hex");
-				console.log("UPDATE INVOICE: "+ id +" hexHash: " + hexHash);
-				
-				const dataUpdate = appDb.prepare("UPDATE invoice SET status='OPEN', dateissued=CURRENT_TIMESTAMP, r_hash=?, comment=? WHERE id=?;").run(response.r_hash,comment,id);
+				const dataUpdate = appDb.prepare("UPDATE invoice SET status='OPEN', dateissued=CURRENT_TIMESTAMP, r_hash=?, comment=? WHERE id=?;").run(hexHash,comment,id);
 				let lnurl = {
 				    pr: bolt11,
 				    routes: []
 				}
-				//console.log("response TO WALLET: " + JSON.stringify(lnurl));
-				
-				const sanity = appDb.prepare("SELECT * FROM invoice WHERE id=?;").get(id);
-				console.log("SANITY: " + JSON.stringify(sanity));
-			 	res.setHeader('Content-Type', 'application/json');
-				
-			  	res.send(lnurl);
-			
+				res.setHeader('Content-Type', 'application/json');
+				res.send(lnurl);
 			}
 			else{
 				res.status(500).json({ error: 'LND error' });

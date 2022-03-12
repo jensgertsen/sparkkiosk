@@ -5,14 +5,19 @@
 	<title>sparkkiosk dashboard</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-	<script src="https://cdn.jsdelivr.net/npm/json2csv@4.2.1"></script>
-	<script src="/js/qrcode.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+	
 	<script>
+		//Uses coinceck for fiat conversions
 		var currencies = ["AED","ARS","AUD","BDT","BHD","BMD","BRL","CAD","CHF","CLP","CNY","CZK","DKK","EUR","GBP","HKD","HUF","IDR","ILS","INR","JPY","KRW","KWD","LKR","MMK","MXN","MYR","NOK","NZD","PHP","PKR","PLN","RUB","SAR","SEK","SGD","THB","TRY","TWD","UAH","USD","VEF","VND","XAG","XAU","XDR","ZAR"];
-		var defaultCurrency = "DKK";
+		var defaultCurrency = "EUR";
 	</script>
 	
 	<style>
+		body{
+			 font-family: Verdana, sans-serif;
+			 font-size:1em;
+		}
 		#contentcontainer{
 			width:60%;
 			margin:auto;
@@ -55,11 +60,6 @@
 			flex-basis:40%;
 			text-align: left;
 		}
-		
-		
-		
-		
-		
 		.btn{
 			margin:auto;
 			color:white;
@@ -88,20 +88,31 @@
 			cursor:pointer;
 			color:tomato;
 		}
+		.downloadlink{
+			cursor:pointer;
+			color:tomato;
+		}
 		.settingslink{
 			cursor:pointer;
 			flex-basis:50%;
 			text-align:left;
+		}
+		.aboutlink{
+			cursor:pointer;
+			flex-basis:50%;
+			text-align:center;
 		}
 		.logoutlink{
 			text-align:right;
 			cursor:pointer;
 			flex-basis:50%;
 		}
-		.logoutlink:hover, .archivelink:hover, .settingslink:hover{
+		.logoutlink:hover, .archivelink:hover, .settingslink:hover,.aboutlink:hover, downloadlink:hover{
 			color:deeppink;
 		}
-		
+		.itemqrcanvas{
+			width:100% !important;
+		}
 
 		#createcontainer{
 			display:none;
@@ -116,6 +127,13 @@
 			padding:5px;
 			margin-bottom:20px;
 		}
+		#settingsmailtext{
+			border-radius:5px;
+			width:256px;
+			padding:5px;
+			margin-bottom:20px;
+			height:100px;
+		}
 		.narrowinline{
 			width:128px;
 			display:inline-block;
@@ -126,9 +144,26 @@
 			max-height:256px;
 		}
 		
+		#aboutcontainer{
+			background-color:gold;
+			margin:30px;
+			padding:30px;
+			text-align:center;
+			color:black;
+			display:none;
+		}
+		
+		
 		@media only screen and (max-width: 960px) {
 			#contentcontainer{
 				width:90%;
+			}
+			.inp, #settingsmailtext{
+				border: none;
+				border-radius:5px;
+				width:192px;
+				padding:5px;
+				margin-bottom:20px;
 			}
 		}
 		
@@ -144,7 +179,12 @@
 		
 		<div id="topcontentcontainer">
 			<div class="settingslink" id="settingslink" onclick="showSettings();">settings</div>
+			<div class="aboutlink" id="aboutlink" onclick="showAbout();">about</div>
 			<div class="logoutlink" onclick="doLogout();">logout</div>
+		</div>
+		<div id="aboutcontainer">
+			Use Sparkkiosk to enable lightning payments using LNURLs - create a product or service ("NEW LNURL"), download and print the QR code and payments are enabled while service active. Tested with Bluewallet, and uses goincecko for fiat conversions. To send mails, use (free) Mailersend (see detail under settings).<br/>More info @ 
+			
 		</div>
 		<div id="settingscontainer">
 			Default currency: <select id="settingscurrency" class=""> 
@@ -167,8 +207,8 @@
 			<br/>
 			
 			<div id="mailsettings">
-				Mails are sent to admin email and the costumer if the comments field from the wallet contains avalid email.<br/>
-				To send email invoices via mailsender, create an account at mailersend.com and create a new template containing these variables: 
+				Mails are sent to admin email and the costumer if the comments field from the wallet contains a valid email.<br/>
+				To send email invoices via Mailersend, create an account at mailersend.com and create a new template containing these variables: 
 				<br/>
 				<code>
 				{$mailtext}, {$datetime}, {$invoiceid},{$itemtext}, {$itemprice}, {$itemcurrency}
@@ -227,6 +267,12 @@
 		getLNURLs();
 		getSettings();
 	});
+	
+	function showAbout(){
+		$("#aboutcontainer").toggle();
+		
+	}
+	
 	
 	function showMailSettings(){
 		if($("#settingssendmail").is(":checked")) {
@@ -316,6 +362,18 @@
 		
 	}
 	
+	
+	
+	function downloadQR(canvasData,title){
+		var tmpLink = document.createElement("a");
+		tmpLink.setAttribute("href", canvasData);
+        tmpLink.setAttribute("download", title+".png");
+        tmpLink.style.visibility = 'hidden';
+        document.body.appendChild(tmpLink);
+        tmpLink.click();	
+		document.body.removeChild(tmpLink);
+	}
+	
 	function getLNURLs(){
 		 $("#lnurllist").html("");
 		 jQuery.ajax({
@@ -339,45 +397,25 @@
 				else{
 					lnurlitem = lnurlitem +"no invoices yet<br/>";
 				}
-				
-				
 				lnurlitem = lnurlitem + "</div>--";
+				lnurlitem = lnurlitem + "<div class=\"editLNURLlink\" onclick=\"editLNURL('"+value.id +"')\">edit lnurl</a></div>";
 				lnurlitem = lnurlitem + "<div class=\"archivelink\" onclick=\"archiveLNURL('"+value.id +"')\">archive lnurl</a></div>";
 				lnurlitem = lnurlitem + "</div>";
-				lnurlitem = lnurlitem + "<div class=\"itemqr\" id=\"qrcode"+value.id+"\">wait...</div>";
+				lnurlitem = lnurlitem + "<div class=\"itemqr\" id=\"qrcodecontainer"+value.id+"\">";
+				lnurlitem = lnurlitem + "<canvas class=\"itemqrcanvas\" id=\"qrcode"+value.id+"\" style=\"width:100%\"></canvas>";
 				lnurlitem = lnurlitem + "</div>";
-			
 				$("#lnurllist").append(lnurlitem);
-				$("#qrcode"+value.id).html("");
-				
-				
-				var qrcode = new QRCode(document.getElementById("qrcode"+value.id), {
-				        text: value.qrpayload,
-				        width: 512,
-				        height: 512,
-				        colorDark : "#000000",
-				        colorLight : "#ffffff",
-				        correctLevel : QRCode.CorrectLevel.H
-				    });
-					let download_link = document.createElement("a");
-					download_link.setAttribute("download", value.description.replaceAll(' ', '_')+".png");
-					download_link.setAttribute("class", "downloadlink");
-					download_link.innerText = "download";
-					$("#qrcode"+value.id).append(download_link);
-					
-					if(document.querySelector("#qrcode"+value.id+ " img").getAttribute("src") == null){
-				        setTimeout(() => {
-							var canvasData = document.querySelector("#qrcode"+value.id+ " canvas").toDataURL();
-							
-				            download_link.setAttribute("href", canvasData);
-				        }, 300);
-				    } 
-					else {
-				        setTimeout(() => {
-							var imgSrc = document.querySelector("#qrcode"+value.id+ " img").getAttribute("src");
-				            download_link.setAttribute("href", imgSrc);
-				        }, 300);
-				    }
+				var qr = new QRious({
+					element: document.getElementById("qrcode"+value.id),
+					value: value.qrpayload,
+					level: 'M',
+					padding: 20,
+					size: 512,
+			        });
+				var canvasData = qr.toDataURL();
+				setTimeout(() => {
+					$("#qrcodecontainer"+value.id).append("<div class=\"downloadlink\" onclick=\"downloadQR('"+ canvasData +"','"+ value.description.replaceAll(" ","_") +"')\">download qr</div></div>");
+		        }, 256);
 			}); 
 			
 	    }).fail(function() {
@@ -410,7 +448,7 @@
 		var amount = ($("#frmamount").val()).replaceAll(",",".");
 		var currency = $("#frmcurrency").val();
 		
-		if (!$.isNumeric(amount) || description=="" || currency=="") {
+		if (!$.isNumeric(amount) || description=="" || currency=="" || amount<=0) {
 		    alert("Submit description, correct amount (float) and currency ");
 		}
 		else{

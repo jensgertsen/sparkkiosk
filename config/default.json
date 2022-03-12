@@ -1,7 +1,6 @@
 {
 	"port":"21214",
-	"adminPassword":"7",
 	"applicationDatabase":"/data/sparkkiosk.sqlite3",
-	"sessionsDatabase":"/data/sessions.sqlite3",
-	"serviceUrl":"http://umbrel.local:21214/"
+	"sessionsDatabase":"/data/sessions.sqlite3"
 }
+

@@ -12,19 +12,29 @@ import bodyParser from 'body-parser';
 import url from 'url';
 import config from 'config';
 
-
-
 import {verifyinvoices} from './verifyinvoices.mjs';
 import {lnsubscribe} from './lnsubscribe.mjs';
 import {lnurlstep1} from './lnurlstep1.mjs';
 import {lnurlstep2} from './lnurlstep2.mjs';
-const adminPassword = "7";
+
 let doInit = true;
+let adminPassword = process.env.APP_PASSWORD;
+
+const PORT = config.get("port");
+var serviceUrl = process.env.APP_HIDDEN_SERVICE + "/";
+if(process.env.APP_HIDDEN_SERVICE =="notyetset.onion"){
+	serviceUrl = process.env.APP_DOMAIN + ":"+ PORT + "/";
+}
+
 
 let lndCredentials = {
 	macaroon: fs.readFileSync(process.env.LND_GRPC_MACAROON).toString('hex'),
-	cert:fs.readFileSync(process.env.LND_GRPC_CERT)
+	cert:fs.readFileSync(process.env.LND_GRPC_CERT),
+	lndEndpoint:process.env.LND_GRPC_ENDPOINT,
+	lndPort:process.env.LND_GRPC_PORT
 }
+
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -38,8 +48,8 @@ if(settingsExist.count==0){
 }
 
 const app = express();
-const PORT = config.get("port");
-const serviceUrl = config.get("serviceUrl");
+
+
 
 
 let session = expressession;
@@ -85,14 +95,18 @@ app.get('/dashboard',(req,res) => {
     }
 })
 
+
+//LNURL endpoints
+//=================================================================================
+
 //step1
 app.get('/lnurl/:id',(req,res) => {
-	lnurlstep1(req.params.id,res);
+	lnurlstep1(sanitize(req.params.id),res);
 })
 //step2
 app.get('/invoice/',(req,res) => {
-	var id = (url.parse(req.url, true).query).id;
-	var comment = (url.parse(req.url, true).query).comment;
+	var id = sanitize()(url.parse(req.url, true).query).id);
+	var comment = sanitize((url.parse(req.url, true).query).comment);
 	lnurlstep2(id, comment,res,lndCredentials);
 })
 
@@ -103,13 +117,11 @@ app.get('/invoice/',(req,res) => {
 //=================================================================================
 app.post('/dologin',(req,res) => {
    	req.session.auth = false;
-	console.log("DOLOGIN "+req.body.password + " / "+ adminPassword);
 	if(req.body.password == adminPassword){
 		req.session.auth = true;
     }
 	let loginStatus = {
 		auth: req.session.auth, 
-
 	}
  	res.setHeader('Content-Type', 'application/json');
   	res.send(loginStatus);
@@ -118,7 +130,6 @@ app.post('/dologin',(req,res) => {
 app.get('/dologout',(req,res) => {
 	req.session.auth = false;
 	req.session.destroy();
-	
 	let loginStatus = {
 		auth: false, 
 	}
@@ -133,19 +144,17 @@ app.get('/getlnurls',(req,res) => {
 		data.forEach(function(lnu) {
 			let words = bech32.toWords(Buffer.from(serviceUrl+'lnurl/'+lnu.id, 'utf8'));
 			var currentEncoded = bech32.encode('LNURL', words, 256);
-			lnu.qrpayload = currentEncoded.toUpperCase();
+			lnu.qrpayload = "LIGHTNING:" + currentEncoded.toUpperCase();
 			//inject latest invoices
 			const invoices = appDb.prepare("SELECT * FROM invoice WHERE lnurl=? ORDER BY datecreated DESC LIMIT 10;").all(lnu.id);
 			lnu.invoices = invoices;
 		});
-		
 		res.setHeader('Content-Type', 'application/json');
 	  	res.send(data);
     }
     else{
 		let loginStatus = {
 			auth: false, 
-
 		}
 	 	res.setHeader('Content-Type', 'application/json');
 	  	res.send(loginStatus);
@@ -161,7 +170,6 @@ app.get('/getinvoices',(req,res) => {
     else{
 		let loginStatus = {
 			auth: false, 
-
 		}
 	 	res.setHeader('Content-Type', 'application/json');
 	  	res.send(loginStatus);
@@ -172,9 +180,9 @@ app.get('/getinvoices',(req,res) => {
 app.post('/createlnurl',(req,res) => {
     if(req.session.auth){
 		var id =crypto.randomBytes(16).toString("hex");
-		var description = req.body.description;
-		var amount = req.body.amount;
-		var currency = req.body.currency;
+		var description =  sanitize(req.body.description);
+		var amount =  sanitize(req.body.amount);
+		var currency =  sanitize(req.body.currency);
 		
 		const data = appDb.prepare("INSERT INTO lnurl (id,datecreated,description,amount,currency,status,invoice) VALUES (?,CURRENT_TIMESTAMP,?,?,?,'active','');").run(id,description,amount,currency);
 		let createStatus = {update: true};
@@ -190,7 +198,7 @@ app.post('/createlnurl',(req,res) => {
 
 app.put('/archive/:id',(req,res) => {
 	if(req.session.auth){
-		var id = req.params.id;
+		var id =  sanitize(req.params.id);
 		const data = appDb.prepare("UPDATE lnurl set status='archived' WHERE id=?").run(id);
 		let createStatus = {update: true};
 	 	res.setHeader('Content-Type', 'application/json');
@@ -221,13 +229,13 @@ app.get('/settings',(req,res) => {
 app.post('/settings',(req,res) => {
     if(req.session.auth){
 	
-		var mailsubject = req.body.mailsubject;
-		var mailtext = req.body.mailtext;
-		var currency = req.body.currency;
-		var sendmails = req.body.sendmail;
-		var mailersend_apikey = req.body.mailersend_apikey;
-		var mailersend_template = req.body.mailersend_template;
-		var adminemail = req.body.adminemail;
+		var mailsubject = sanitize(req.body.mailsubject);
+		var mailtext = sanitize(req.body.mailtext);
+		var currency = sanitize(req.body.currency);
+		var sendmails = sanitize(req.body.sendmail);
+		var mailersend_apikey = sanitize(req.body.mailersend_apikey);
+		var mailersend_template = sanitize(req.body.mailersend_template);
+		var adminemail = sanitize(req.body.adminemail);
 		
 		const data = appDb.prepare("UPDATE settings SET mailsubject =?,mailtext =?,currency =?,sendmails =?,mailersend_apikey =?,mailersend_template =?,adminemail =? WHERE id='default';").run(mailsubject,mailtext,currency,sendmails,mailersend_apikey,mailersend_template,adminemail);
 		
@@ -246,7 +254,6 @@ app.post('/settings',(req,res) => {
 //INIT VERIFY INVOICE STATUS
 //=================================================================================
 if(doInit){
-	console.log("init, checking unsettled invoices");
 	verifyinvoices(lndCredentials);
 	doInit = false;
 }
@@ -256,4 +263,17 @@ if(doInit){
 lnsubscribe(lndCredentials);
 
 
-app.listen(PORT, () => console.log('Server Running at port: '+PORT));
+app.listen(PORT, () => console.log("Sparkkiosk running at: " + serviceUrl));
+
+function sanitize(string) {
+  const map = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#x27;',
+      "/": '&#x2F;',
+  };
+  const reg = /[&<>"'/]/ig;
+  return string.replace(reg, (match)=>(map[match]));
+}

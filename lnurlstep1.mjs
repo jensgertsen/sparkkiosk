@@ -24,17 +24,15 @@ async function lnurlstep1(id,res){
 		var id =crypto.randomBytes(16).toString("hex");
 		const dataUpdate = appDb.prepare("INSERT INTO invoice (id,datecreated,value,expiry,memo,r_hash,lnurl,status,amount,currency) VALUES (?,CURRENT_TIMESTAMP,?,?,?,'',?,'NEW',?,?);").run(id,satAmount,invoiceExpiry,description,lnurlId,amount,currency);
 		let lnurl = {
-		    callback: serviceUrl+"invoice/?id="+id,
+		    callback: serviceUrl+"/invoice/?id="+id,
 		    maxSendable: satAmount,
 		    minSendable: satAmount,
 		    metadata: "[[\"text/plain\", \""+ description +"\"]]",
 			commentAllowed: 256,
 		    tag: "payRequest"
 		}
-		console.log("response TO WALLET STEP 1: " + JSON.stringify(lnurl));
 	 	res.setHeader('Content-Type', 'application/json');
 	  	res.send(lnurl);
-		
 	}
 	else{
 		let lnurl = {
