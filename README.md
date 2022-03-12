@@ -1,0 +1,3 @@
+# sparkkiosk
+Minimal LNURL kiosk.
+
