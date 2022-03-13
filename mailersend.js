@@ -7,7 +7,7 @@ var validator = require("email-validator");
 
 module.exports = function (recipient, id, subject,mailtext, itemtext, itemprice, itemcurrency,key,template){
 
-	if(validator.validate(recipient)){
+	if(validator.validate(recipient) && key!="" && template!= ""){
 		const mailersend = new MailerSend({api_key: key,});
 		const recipients = [new Recipient(recipient, " ")];
 		const now = new Date();

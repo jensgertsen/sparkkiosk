@@ -8,7 +8,7 @@ const appDb = new Database(config.get("applicationDatabase"));
 const invoiceExpiry = config.get("invoiceExpiry");
 var serviceUrl = config.get("serviceUrl");
 if(serviceUrl ==""){
-	serviceUrl = process.env.APP_HIDDEN_SERVICE + "/";
+	serviceUrl = process.env.APP_HIDDEN_SERVICE;
 }
 
 async function lnurlstep1(id,res){

@@ -24,7 +24,7 @@ const PORT = config.get("port");
 
 var serviceUrl = config.get("serviceUrl");
 if(serviceUrl ==""){
-	serviceUrl = process.env.APP_HIDDEN_SERVICE + "/";
+	serviceUrl = process.env.APP_HIDDEN_SERVICE;
 }
 
 
@@ -42,7 +42,7 @@ const __dirname = path.dirname(__filename);
 const appDb = new Database(config.get("applicationDatabase"));
 appDb.prepare("CREATE TABLE IF NOT EXISTS settings(id text,currency text,mailsubject text,mailtext text,sendmails text,mailersend_apikey text,mailersend_template text,adminemail text);").run();
 appDb.prepare("CREATE TABLE IF NOT EXISTS invoice(id text,datecreated text,dateissued text,value integer,expiry integer,memo text,r_hash text,lnurl text,status text,amount integer,currency text, comment text);").run();
-appDb.prepare("CREATE TABLE IF NOT EXISTS lnurl(id text,datecreated text,description text,invoice text,amount integer,currency text,status text,encodedurl text);").run();
+appDb.prepare("CREATE TABLE IF NOT EXISTS lnurl(id text,datecreated text,description text,invoice text,amount integer,currency text,status text);").run();
 const settingsExist = appDb.prepare("SELECT count(id) as count FROM settings WHERE id='default';").get();
 if(settingsExist.count==0){
 	appDb.prepare("INSERT INTO settings (id) VALUES('default')").run();
@@ -143,7 +143,7 @@ app.get('/getlnurls',(req,res) => {
 		const data = appDb.prepare("SELECT * FROM lnurl WHERE status='active' ORDER BY datecreated DESC;").all();
 		//inject bech32 encoded url
 		data.forEach(function(lnu) {
-			let words = bech32.toWords(Buffer.from(serviceUrl+'lnurl/'+lnu.id, 'utf8'));
+			let words = bech32.toWords(Buffer.from(serviceUrl+'/lnurl/'+lnu.id, 'utf8'));
 			var currentEncoded = bech32.encode('LNURL', words, 256);
 			lnu.qrpayload = "LIGHTNING:" + currentEncoded.toUpperCase();
 			//inject latest invoices
@@ -266,15 +266,19 @@ lnsubscribe(lndCredentials);
 
 app.listen(PORT, () => console.log("Sparkkiosk running at: " + serviceUrl));
 
-function sanitize(string) {
-  const map = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#x27;',
-      "/": '&#x2F;',
-  };
-  const reg = /[&<>"'/]/ig;
-  return string.replace(reg, (match)=>(map[match]));
+function sanitize(strIn) {
+	var strOut = "";
+	if(strIn != undefined && strIn != ""){
+		const map = {
+	      '&': '&amp;',
+	      '<': '&lt;',
+	      '>': '&gt;',
+	      '"': '&quot;',
+	      "'": '&#x27;',
+	      "/": '&#x2F;',
+		};
+		const reg = /[&<>"'/]/ig;
+	 	strOut= string.replace(reg, (match)=>(map[match]));
+	}
+	return strOut;
 }

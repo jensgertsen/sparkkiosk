@@ -3,6 +3,6 @@
 	"applicationDatabase":"/data/sparkkiosk.sqlite3",
 	"sessionsDatabase":"/data/sessions.sqlite3",
 	"invoiceExpiry":600,
-	"serviceUrl":"http://umbrel.local:21214/"
+	"serviceUrl":"http://umbrel.local:21214"
 }
 

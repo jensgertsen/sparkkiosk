@@ -16,7 +16,7 @@
 	<style>
 		body{
 			 font-family: Verdana, sans-serif;
-			 font-size:1em;
+			 font-size:0.8em;
 		}
 		#contentcontainer{
 			width:60%;
@@ -307,7 +307,6 @@
 			"mailtext": $("#settingsmailtext").val(),
 			"adminemail":$("#settingsadminemail").val()
 		}
-		console.log(JSON.stringify(requestBody));
 		jQuery.ajax({
 	        type: "POST",
 	        url: "/settings",
@@ -339,7 +338,6 @@
 
 	    }).done(function(data){
 			if(data){
-				console.log(JSON.stringify(data));
 				defaultCurrency = data.currency;
 				$("#settingscurrency").val(defaultCurrency).change();
 				$("#settingsmailsubject").val(data.mailsubject);
@@ -382,7 +380,6 @@
 	        contentType: "application/json"
 
 	    }).done(function(data){
-			console.log(JSON.stringify(data));
 			$.each(data, function(key, value) {
 				var lnurlitem= "<div class=\"lnurlitem\">";
 				lnurlitem = lnurlitem + "<div class=\"itemdetails\">";
@@ -515,7 +512,6 @@
 	        contentType: "application/json"
 
 	    }).done(function(data){
-			console.log("CSV RAW: " + JSON.stringify(data));
 			var csvString = "";
 			csvString = "date;status;text;satoshis;fiat;currency;LND hash;\r\n";
 			$.each(data, function(key, value) {
