@@ -5,7 +5,10 @@ import protoLoader from '@grpc/proto-loader';
 import config from 'config';
 
 const appDb = new Database(config.get("applicationDatabase"));
-const serviceUrl = config.get("serviceUrl");
+var serviceUrl = config.get("serviceUrl");
+if(serviceUrl ==""){
+	serviceUrl = process.env.APP_HIDDEN_SERVICE + "/";
+}
 
 function lnurlstep2(id,comment,res,lndCredentials){
 	

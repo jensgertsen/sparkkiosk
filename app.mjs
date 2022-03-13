@@ -21,9 +21,10 @@ let doInit = true;
 let adminPassword = process.env.APP_PASSWORD;
 
 const PORT = config.get("port");
-var serviceUrl = process.env.APP_HIDDEN_SERVICE + "/";
-if(process.env.APP_HIDDEN_SERVICE =="notyetset.onion"){
-	serviceUrl = process.env.APP_DOMAIN + ":"+ PORT + "/";
+
+var serviceUrl = config.get("serviceUrl");
+if(serviceUrl ==""){
+	serviceUrl = process.env.APP_HIDDEN_SERVICE + "/";
 }
 
 
