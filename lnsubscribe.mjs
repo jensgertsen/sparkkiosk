@@ -32,7 +32,7 @@ function lnsubscribe(lndCredentials){
 	  callback(null, metadata);
 	});
 	let creds = grpc.credentials.combineChannelCredentials(sslCreds, macaroonCreds);
-	let lightning = new lnrpc.Lightning(lndCredentials.endPoint+":"+lndCredentials.lndPort, creds);
+	let lightning = new lnrpc.Lightning(lndCredentials.lndEndpoint+":"+lndCredentials.lndPort, creds);
 	let request = {}; 
 	
 	let call = lightning.subscribeInvoices(request);

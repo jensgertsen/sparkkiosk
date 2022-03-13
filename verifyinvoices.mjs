@@ -34,8 +34,7 @@ function verifyinvoices(lndCredentials){
 	  callback(null, metadata);
 	});
 	let creds = grpc.credentials.combineChannelCredentials(sslCreds, macaroonCreds);
-	let lightning = new lnrpc.Lightning(lndCredentials.endPoint+":"+lndCredentials.lndPort, creds);
-	
+	let lightning = new lnrpc.Lightning(lndCredentials.lndEndpoint+":"+lndCredentials.lndPort, creds);
 	const invoices = appDb.prepare("SELECT * FROM invoice WHERE status='OPEN'").all();
 
 	invoices.forEach(function(ci) {
