@@ -5,7 +5,7 @@ import config from 'config';
 
 const appDb = new Database(config.get("applicationDatabase"));
 
-const invoiceExpiry = 600;
+const invoiceExpiry = config.get("invoiceExpiry");
 const serviceUrl = config.get("serviceUrl");
 
 async function lnurlstep1(id,res){

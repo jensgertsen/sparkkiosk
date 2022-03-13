@@ -10,6 +10,9 @@ const appDb = new Database(config.get("applicationDatabase"));
 function verifyinvoices(lndCredentials){
 	const settingsDefault = appDb.prepare("SELECT * FROM settings WHERE id='default';").get();
 	
+	//clean up invoices that are expired - or haven't been created in LND at expiry
+	const cleanUpTimeOuts = appDb.prepare("UPDATE invoice set status='CANCELED' WHERE (status='OPEN' OR status='NEW') AND ROUND((JULIANDAY(CURRENT_TIMESTAMP) - JULIANDAY(datecreated)) * 86400) > ?;").run(config.get("invoiceExpiry"));
+	
 	const loaderOptions = {
 	  keepCase: true,
 	  longs: String,

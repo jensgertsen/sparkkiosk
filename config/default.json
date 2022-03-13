@@ -1,6 +1,7 @@
 {
 	"port":"21214",
 	"applicationDatabase":"/data/sparkkiosk.sqlite3",
-	"sessionsDatabase":"/data/sessions.sqlite3"
+	"sessionsDatabase":"/data/sessions.sqlite3",
+	"invoiceExpiry":600
 }
 
