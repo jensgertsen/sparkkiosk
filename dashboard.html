@@ -94,20 +94,26 @@
 		}
 		.settingslink{
 			cursor:pointer;
-			flex-basis:50%;
+			flex-basis:25%;
 			text-align:left;
 		}
 		.aboutlink{
 			cursor:pointer;
-			flex-basis:50%;
+			flex-basis:25%;
 			text-align:center;
 		}
+		.exportlink{
+			cursor:pointer;
+			flex-basis:25%;
+			text-align:center;
+		}
+		
 		.logoutlink{
 			text-align:right;
 			cursor:pointer;
-			flex-basis:50%;
+			flex-basis:25%;
 		}
-		.logoutlink:hover, .archivelink:hover, .settingslink:hover,.aboutlink:hover, downloadlink:hover{
+		.logoutlink:hover, .archivelink:hover, .settingslink:hover,.aboutlink:hover, .exportlink:hover, downloadlink:hover{
 			color:deeppink;
 		}
 		.itemqrcanvas{
@@ -153,17 +159,20 @@
 			display:none;
 		}
 		
+		#exportcontainer{
+			margin:30px;
+			padding:30px;
+			text-align:center;
+			display:none;
+		}
+		
 		
 		@media only screen and (max-width: 960px) {
 			#contentcontainer{
 				width:90%;
 			}
-			.inp, #settingsmailtext{
-				border: none;
-				border-radius:5px;
+			.inp, #settingsmailtext, .btn{
 				width:192px;
-				padding:5px;
-				margin-bottom:20px;
 			}
 		}
 		
@@ -180,10 +189,15 @@
 		<div id="topcontentcontainer">
 			<div class="settingslink" id="settingslink" onclick="showSettings();">settings</div>
 			<div class="aboutlink" id="aboutlink" onclick="showAbout();">about</div>
+			<div class="exportlink" id="exportlink" onclick="showExport();">export</div>
 			<div class="logoutlink" onclick="doLogout();">logout</div>
 		</div>
+		<div id="exportcontainer">
+			Export _all_ invoices to csv.<br/><br/>
+			<div onclick="exportCSV();" class="btn">EXPORT INVOICES</div>
+		</div>
 		<div id="aboutcontainer">
-			Use Sparkkiosk to enable lightning payments using LNURLs - create a product or service ("NEW LNURL"), download and print the QR code and payments are enabled while service active. Tested with Bluewallet, and uses goincecko for fiat conversions. To send mails, use (free) Mailersend (see detail under settings).<br/>More info @ https://github.com/jensgertsen/sparkkiosk
+			Use Sparkkiosk to enable lightning payments using LNURLs - create a product or service ("NEW LNURL"), download and print the QR code and payments are enabled while service active. Tested with Bluewallet, uses goincecko for fiat conversions. To send mails, use (free) Mailersend (see detail under settings).<br/>More info @ https://github.com/jensgertsen/sparkkiosk
 			
 		</div>
 		<div id="settingscontainer">
@@ -228,7 +242,6 @@
 			<div onclick="setSettings();" class="btn">SAVE SETTINGS</div>
 			
 		</div>
-		<div onclick="exportCSV();" class="btn">EXPORT _ALL_ INVOICES CSV</div>
 		<div onclick="getLNURLs();" class="btn">REFRESH LIST</div>
 		<div onclick="showCreate();" class="btn">NEW LNURL</div>
 	</div>
@@ -267,7 +280,10 @@
 		getLNURLs();
 		getSettings();
 	});
-	
+	function showExport(){
+		$("#exportcontainer").toggle();
+		
+	}
 	function showAbout(){
 		$("#aboutcontainer").toggle();
 		
@@ -515,7 +531,7 @@
 			var csvString = "";
 			csvString = "date;status;text;satoshis;fiat;currency;LND hash;\r\n";
 			$.each(data, function(key, value) {
-				csvString += value.datecreated + ";" + value.status + ";" + value.memo + ";" + + ((value.value)/1000) + ";" + value.amount + ";" + value.currency + ";" + value.r_hash + ";" + "\r\n";
+				csvString += value.datecreated + ";" + value.status + ";" + value.memo.replaceAll(";",",") + ";" + + ((value.value)/1000) + ";" + value.amount + ";" + value.currency + ";" + value.r_hash + ";" + "\r\n";
 			});
 			var blob = new Blob([csvString], { type: "text/csv;charset=utf-8;"});
 	        var tmpLink = document.createElement("a");
