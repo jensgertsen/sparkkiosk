@@ -30,8 +30,8 @@ Tested with bluewallet - it seems wallet of satoshi has issues with tor endpoint
 Made for the umbrel app store - simply install and use password provided by Umbrel.
 If used elsewhere set these environment variables: 
 
-APP_PASSWORD. 
-APP_HIDDEN_SERVICE (Tor). 
+APP_PASSWORD  
+APP_HIDDEN_SERVICE (Tor)  
 LND_GRPC_MACAROON -> path to LND macaroon  
 LND_GRPC_CERT -> path to LND cert  
 LND_GRPC_ENDPOINT -> LND IP  
